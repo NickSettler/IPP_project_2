@@ -22,7 +22,12 @@ class ConstantArgument(Argument):
 
 class VariableArgument(Argument):
     def get_value(self):
-        return self.value
+        memory = Memory().get_frame(self.frame)
+
+        if self.name not in memory:
+            raise Exception("Variable not defined")
+        else:
+            return memory[self.name]
 
 
 class Instruction(ABC):
@@ -55,6 +60,12 @@ class MemoryMeta(type):
     _instances = {}
 
     def __call__(cls, *args, **kwargs):
+        """
+        Memory is singleton
+        :param args:
+        :param kwargs:
+        :return:
+        """
         if cls not in cls._instances:
             cls._instances[cls] = super(MemoryMeta, cls).__call__(*args, **kwargs)
         return cls._instances[cls]
@@ -78,6 +89,45 @@ class Memory(metaclass=MemoryMeta):
 
     def get_stack(self):
         return self._stack
+
+    def get_frame(self, frame_name: str) -> dict:
+        if frame_name == "GF":
+            return self.get_global_frame()
+        elif frame_name == "LF":
+            return self.get_local_frame()
+        elif frame_name == "TF":
+            return self.get_temporary_frame()
+        else:
+            raise Exception("Unknown frame name")
+
+    def get_variable(self, frame_name: str, variable_name: str) -> VariableArgument | None:
+        frame = self.get_frame(frame_name)
+
+        return frame[variable_name]
+
+    def create_variable(self, frame_name: str, variable_name: str) -> None:
+        frame = self.get_frame(frame_name)
+
+        if variable_name in frame:
+            raise Exception("Variable already defined")
+
+        frame[variable_name] = None
+
+    def read_variable(self, frame_name: str, variable_name: str) -> VariableArgument:
+        frame = self.get_frame(frame_name)
+
+        if variable_name not in frame:
+            raise Exception("Variable not defined")
+
+        return frame[variable_name]
+
+    def update_variable(self, frame_name: str, variable_name: str, value) -> None:
+        frame = self.get_frame(frame_name)
+
+        if variable_name not in frame:
+            raise Exception("Variable not defined")
+
+        frame[variable_name] = value
 
 
 INSTRUCTION_MAP = {
