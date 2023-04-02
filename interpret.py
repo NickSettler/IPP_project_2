@@ -1,6 +1,6 @@
 from __future__ import annotations
 import sys
-from typing import List
+from typing import List, Dict
 from xml.etree import ElementTree
 from abc import abstractmethod, ABC
 
@@ -15,10 +15,10 @@ class Argument(ABC):
         self.frame = frame
         self.name = name
 
-    def get_name(self):
+    def get_name(self) -> str:
         return self.name
 
-    def get_frame(self):
+    def get_frame(self) -> str:
         return self.frame
 
     @abstractmethod
@@ -27,12 +27,12 @@ class Argument(ABC):
 
 
 class IntegerArgument(Argument):
-    def get_value(self):
+    def get_value(self) -> int:
         return int(self.value)
 
 
 class BooleanArgument(Argument):
-    def get_value(self):
+    def get_value(self) -> bool:
         if self.value == "true":
             return True
         else:
@@ -40,22 +40,22 @@ class BooleanArgument(Argument):
 
 
 class StringArgument(Argument):
-    def get_value(self):
+    def get_value(self) -> str:
         return self.value
 
 
 class NilArgument(Argument):
-    def get_value(self):
+    def get_value(self) -> None:
         return None
 
 
 class LabelArgument(Argument):
-    def get_value(self):
+    def get_value(self) -> str:
         return self.value
 
 
 class TypeArgument(Argument):
-    def get_value(self):
+    def get_value(self) -> str:
         return self.value
 
 
@@ -64,7 +64,7 @@ class VariableArgument(Argument):
         frame, name = value.split("@", 1)
         super().__init__(None, frame, name)
 
-    def get_value(self):
+    def get_value(self) -> str:
         memory = Memory().get_frame(self.frame)
 
         if self.name not in memory:
@@ -379,33 +379,37 @@ class MemoryMeta(type):
 
 
 class Memory(metaclass=MemoryMeta):
+    @staticmethod
+    def get_frame_method(self, frame_name: str):
+        if frame_name == "GF":
+            return self.get_global_frame
+        elif frame_name == "LF":
+            return self.get_local_frame
+        elif frame_name == "TF":
+            return self.get_temporary_frame
+        else:
+            raise Exception("Unknown frame name ({})".format(frame_name))
+
     def __init__(self):
         self._global_frame = {}
         self._local_frame = {}
         self._temporary_frame = {}
         self._stack = []
 
-    def get_global_frame(self):
+    def get_global_frame(self) -> Dict:
         return self._global_frame
 
-    def get_local_frame(self):
+    def get_local_frame(self) -> Dict:
         return self._local_frame
 
-    def get_temporary_frame(self):
+    def get_temporary_frame(self) -> Dict:
         return self._temporary_frame
 
-    def get_stack(self):
+    def get_stack(self) -> List:
         return self._stack
 
-    def get_frame(self, frame_name: str) -> dict:
-        if frame_name == "GF":
-            return self.get_global_frame()
-        elif frame_name == "LF":
-            return self.get_local_frame()
-        elif frame_name == "TF":
-            return self.get_temporary_frame()
-        else:
-            raise Exception("Unknown frame name")
+    def get_frame(self, frame_name: str) -> Dict:
+        return self.get_frame_method(self, frame_name)()
 
     def get_variable(self, frame_name: str, variable_name: str) -> VariableArgument | None:
         frame = self.get_frame(frame_name)
