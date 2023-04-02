@@ -62,19 +62,89 @@ class Instruction(ABC):
         pass
 
 
-class WriteInstruction(Instruction):
+class MoveInstruction(Instruction):
     def execute(self):
-        print("Writing...")
+        variable = self.arguments[0]
+        value = self.arguments[1].get_value()
+
+        Memory().update_variable(variable.get_frame(), variable.get_name(), value)
+
+
+class CreateFrameInstruction(Instruction):
+    def execute(self):
+        Memory().get_temporary_frame().clear()
+
+
+class PushFrameInstruction(Instruction):
+    def execute(self):
+        Memory().get_stack().append(Memory().get_temporary_frame())
+        Memory().get_temporary_frame().clear()
+
+
+class PopFrameInstruction(Instruction):
+    def execute(self):
+        Memory().get_temporary_frame().update(Memory().get_stack().pop())
 
 
 class DefVarInstruction(Instruction):
     def execute(self):
-        print("Defining variable...")
+        variable = self.arguments[0]
+        Memory().create_variable(variable.get_frame(), variable.get_name())
 
 
-class MoveInstruction(Instruction):
+class CallInstruction(Instruction):
     def execute(self):
-        print("Moving...")
+        label = self.arguments[0]
+        Memory().get_stack().append(label)
+
+
+class ReturnInstruction(Instruction):
+    def execute(self):
+        Memory().get_stack().pop()
+
+
+# TODO: Add PUSHS and POPS
+
+class AddInstruction(Instruction):
+    def execute(self):
+        variable = self.arguments[0]
+        value1 = self.arguments[1].get_value()
+        value2 = self.arguments[2].get_value()
+
+        Memory().update_variable(variable.get_frame(), variable.get_name(), value1 + value2)
+
+
+class SubInstruction(Instruction):
+    def execute(self):
+        variable = self.arguments[0]
+        value1 = self.arguments[1].get_value()
+        value2 = self.arguments[2].get_value()
+
+        Memory().update_variable(variable.get_frame(), variable.get_name(), value1 - value2)
+
+
+class MulInstruction(Instruction):
+    def execute(self):
+        variable = self.arguments[0]
+        value1 = self.arguments[1].get_value()
+        value2 = self.arguments[2].get_value()
+
+        Memory().update_variable(variable.get_frame(), variable.get_name(), value1 * value2)
+
+
+class IDivInstruction(Instruction):
+    def execute(self):
+        variable = self.arguments[0]
+        value1 = self.arguments[1].get_value()
+        value2 = self.arguments[2].get_value()
+
+        Memory().update_variable(variable.get_frame(), variable.get_name(), value1 // value2)
+
+
+class WriteInstruction(Instruction):
+    def execute(self):
+        for argument in self.arguments:
+            print(argument.get_value(), end=" ")
 
 
 class MemoryMeta(type):
@@ -152,8 +222,14 @@ class Memory(metaclass=MemoryMeta):
 
 
 INSTRUCTION_MAP = {
-    "DEFVAR": DefVarInstruction,
     "MOVE": MoveInstruction,
+    "CREATEFRAME": CreateFrameInstruction,
+    "PUSHFRAME": PushFrameInstruction,
+    "POPFRAME": PopFrameInstruction,
+    "DEFVAR": DefVarInstruction,
+    "CALL": CallInstruction,
+    "RETURN": ReturnInstruction,
+    "ADD": AddInstruction,
     "WRITE": WriteInstruction,
 }
 
