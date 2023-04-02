@@ -423,6 +423,19 @@ class Memory(metaclass=MemoryMeta):
         self._local_frame = {}
         self._temporary_frame = {}
         self._stack = []
+        self._program_counter = 0
+
+    def increment_program_counter(self):
+        self._program_counter += 1
+
+    def decrement_program_counter(self):
+        self._program_counter -= 1
+
+    def set_program_counter(self, value):
+        self._program_counter = value
+
+    def get_program_counter(self):
+        return self._program_counter
 
     def get_global_frame(self) -> Dict:
         return self._global_frame
@@ -467,6 +480,13 @@ class Memory(metaclass=MemoryMeta):
             raise Exception("Variable not defined")
 
         frame[variable_name] = value
+
+    def reset(self):
+        self._global_frame = {}
+        self._local_frame = {}
+        self._temporary_frame = {}
+        self._stack = []
+        self._program_counter = 0
 
 
 INSTRUCTION_MAP = {
@@ -516,16 +536,36 @@ ARGUMENT_TYPE_MAP = {
 }
 
 
-def main():
-    root = ElementTree.parse("examples/arithmetics.xml")
+def processXML(root: ElementTree):
+    children = root.findall("./*")
 
-    for instruction_tag in root.findall("instruction"):
+    pc = Memory().get_program_counter()
+
+    while pc < len(children):
+        instruction_tag = children[pc]
+
+        Memory().increment_program_counter()
+        
+        if instruction_tag.tag != "instruction":
+            raise Exception("Unknown tag ({})".format(instruction_tag.tag))
+
         opcode = instruction_tag.get("opcode")
+
+        if opcode not in INSTRUCTION_MAP.keys():
+            raise Exception("Unknown opcode ({})".format(opcode))
+
         instruction_class = INSTRUCTION_MAP[opcode]
 
         arguments = []
         for argument_tag in instruction_tag.findall("./*"):
+            if not argument_tag.tag.startswith("arg"):
+                raise Exception("Unknown tag ({})".format(argument_tag.tag))
+
             argument_type = argument_tag.get("type")
+
+            if argument_type not in ARGUMENT_TYPE_MAP.keys():
+                raise Exception("Unknown argument type ({})".format(argument_type))
+
             argument_value = argument_tag.text
             argument_class = ARGUMENT_TYPE_MAP[argument_type]
             argument = argument_class(argument_value)
@@ -533,6 +573,24 @@ def main():
 
         instruction = instruction_class(arguments)
         instruction.execute()
+        pc = Memory().get_program_counter()
+
+
+def main():
+    files = ["examples/strings.xml", "examples/arithmetics.xml", "examples/booleans.xml"]
+
+    Memory().reset()
+
+    for file in files:
+        print("Processing file: {}".format(file))
+        print("------------------")
+        try:
+            root = ElementTree.parse(file)
+            processXML(root)
+        finally:
+            Memory().reset()
+        print("\n------------------")
+        print("Done processing file: {}\n".format(file))
 
 
 if __name__ == '__main__':
