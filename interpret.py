@@ -1,8 +1,36 @@
 from __future__ import annotations
 import sys
+import re
 from typing import List, Dict
 from xml.etree import ElementTree
 from abc import abstractmethod, ABC
+
+
+def replace_special_chars(input_str):
+    """
+    Replace special characters in format \\ddd with their ASCII representation
+    :param input_str: Input string
+    :return: String with replaced characters
+    """
+    pattern = r"\\(\d{3})"
+
+    def replace(match):
+        return chr(int(match.group(1)))
+
+    return re.sub(pattern, replace, input_str)
+
+
+class Helpers:
+    @staticmethod
+    def process_output(arg) -> str:
+        if type(arg) is bool:
+            return "true" if arg else "false"
+        elif type(arg) is None:
+            return ""
+        elif type(arg) is str:
+            return replace_special_chars(arg)
+        else:
+            return str(arg)
 
 
 class Argument(ABC):
@@ -267,7 +295,7 @@ class ReadInstruction(Instruction):
 class WriteInstruction(Instruction):
     def execute(self):
         for argument in self.arguments:
-            print(argument.get_value(), end=" ")
+            print(Helpers.process_output(argument.get_value()), end=" ")
 
 
 class ConcatInstruction(Instruction):
