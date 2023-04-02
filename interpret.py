@@ -1,6 +1,6 @@
+from __future__ import annotations
 from typing import List
 from xml.etree import ElementTree as ET
-
 from abc import abstractmethod, ABC
 
 
@@ -240,9 +240,7 @@ def parse_variable_argument(argument: str):
 
 
 def main():
-    xml = """<?xml version="1.0" encoding="UTF-8"?><program language="IPPcode23"><instruction order="1" opcode="DEFVAR"><arg1 type="var">GF@a</arg1></instruction><instruction order="2" opcode="MOVE"><arg1 type="var">GF@a</arg1><arg2 type="int">1</arg2></instruction><instruction order="3" opcode="WRITE"><arg1 type="var">GF@a</arg1></instruction></program>"""
-
-    root = ET.fromstring(xml)
+    root = ET.parse("test.xml")
 
     for instruction_tag in root.findall("instruction"):
         opcode = instruction_tag.get("opcode")
