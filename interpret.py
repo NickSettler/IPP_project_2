@@ -1,7 +1,7 @@
 from __future__ import annotations
 import sys
 from typing import List
-from xml.etree import ElementTree as ET
+from xml.etree import ElementTree
 from abc import abstractmethod, ABC
 
 
@@ -458,7 +458,7 @@ def parse_variable_argument(argument: str):
 
 
 def main():
-    root = ET.parse("test.xml")
+    root = ElementTree.parse("examples/arithmetics.xml")
 
     for instruction_tag in root.findall("instruction"):
         opcode = instruction_tag.get("opcode")
