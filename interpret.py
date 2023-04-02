@@ -10,7 +10,7 @@ class Argument(ABC):
     name: str
     frame: str
 
-    def __init__(self, value: str, frame: str = "", name: str = ""):
+    def __init__(self, value: str | None, frame: str = "", name: str = ""):
         self.value = value
         self.frame = frame
         self.name = name
@@ -31,7 +31,25 @@ class IntegerArgument(Argument):
         return int(self.value)
 
 
+class BooleanArgument(Argument):
+    def get_value(self):
+        if self.value == "true":
+            return True
+        else:
+            return False
+
+
 class StringArgument(Argument):
+    def get_value(self):
+        return self.value
+
+
+class NilArgument(Argument):
+    def get_value(self):
+        return None
+
+
+class LabelArgument(Argument):
     def get_value(self):
         return self.value
 
@@ -42,13 +60,17 @@ class TypeArgument(Argument):
 
 
 class VariableArgument(Argument):
+    def __init__(self, value: str):
+        frame, name = value.split("@", 1)
+        super().__init__(None, frame, name)
+
     def get_value(self):
         memory = Memory().get_frame(self.frame)
 
         if self.name not in memory:
             raise Exception("Variable not defined")
         else:
-            return memory[self.name]
+            return memory[self.name] if memory[self.name] is not None else ""
 
 
 class Instruction(ABC):
@@ -451,10 +473,15 @@ INSTRUCTION_MAP = {
     "BREAK": BreakInstruction,
 }
 
-
-def parse_variable_argument(argument: str):
-    frame, name = argument.split("@")
-    return VariableArgument("", frame, name)
+ARGUMENT_TYPE_MAP = {
+    "int": IntegerArgument,
+    "bool": BooleanArgument,
+    "string": StringArgument,
+    "nil": NilArgument,
+    "label": LabelArgument,
+    "type": TypeArgument,
+    "var": VariableArgument,
+}
 
 
 def main():
@@ -468,16 +495,8 @@ def main():
         for argument_tag in instruction_tag.findall("./*"):
             argument_type = argument_tag.get("type")
             argument_value = argument_tag.text
-
-            if argument_type == "var":
-                argument = parse_variable_argument(argument_value)
-            elif argument_type == "int":
-                argument = IntegerArgument(argument_value)
-            elif argument_type == "string":
-                argument = StringArgument(argument_value)
-            else:
-                raise Exception("Unknown argument type")
-
+            argument_class = ARGUMENT_TYPE_MAP[argument_type]
+            argument = argument_class(argument_value)
             arguments.append(argument)
 
         instruction = instruction_class(arguments)
