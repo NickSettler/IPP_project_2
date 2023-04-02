@@ -6,16 +6,31 @@ from abc import abstractmethod, ABC
 
 class Argument(ABC):
     value: str
+    name: str
+    frame: str
 
-    def __init__(self, value: str):
+    def __init__(self, value: str, frame: str = "", name: str = ""):
         self.value = value
+        self.frame = frame
+        self.name = name
+
+    def get_name(self):
+        return self.name
+
+    def get_frame(self):
+        return self.frame
 
     @abstractmethod
     def get_value(self):
         pass
 
 
-class ConstantArgument(Argument):
+class IntegerArgument(Argument):
+    def get_value(self):
+        return int(self.value)
+
+
+class StringArgument(Argument):
     def get_value(self):
         return self.value
 
@@ -31,13 +46,19 @@ class VariableArgument(Argument):
 
 
 class Instruction(ABC):
-    arguments: List[str]
+    arguments: List[Argument]
 
-    def __init__(self, arguments: List[str]):
+    def __init__(self, arguments: List[Argument]):
+        """
+        :param arguments: List of arguments
+        """
         self.arguments = arguments
 
     @abstractmethod
     def execute(self):
+        """
+        Execute instruction
+        """
         pass
 
 
@@ -137,6 +158,11 @@ INSTRUCTION_MAP = {
 }
 
 
+def parse_variable_argument(argument: str):
+    frame, name = argument.split("@")
+    return VariableArgument("", frame, name)
+
+
 def main():
     xml = """<?xml version="1.0" encoding="UTF-8"?><program language="IPPcode23"><instruction order="1" opcode="DEFVAR"><arg1 type="var">GF@a</arg1></instruction><instruction order="2" opcode="MOVE"><arg1 type="var">GF@a</arg1><arg2 type="int">1</arg2></instruction><instruction order="3" opcode="WRITE"><arg1 type="var">GF@a</arg1></instruction></program>"""
 
@@ -146,12 +172,24 @@ def main():
         opcode = instruction_tag.get("opcode")
         instruction_class = INSTRUCTION_MAP[opcode]
 
-        arguments = instruction_tag.findall("arg1")
+        arguments = []
+        for argument_tag in instruction_tag.findall("./*"):
+            argument_type = argument_tag.get("type")
+            argument_value = argument_tag.text
 
-        instruction_tag = instruction_class([])
-        instruction_tag.execute()
+            if argument_type == "var":
+                argument = parse_variable_argument(argument_value)
+            elif argument_type == "int":
+                argument = IntegerArgument(argument_value)
+            elif argument_type == "string":
+                argument = StringArgument(argument_value)
+            else:
+                raise Exception("Unknown argument type")
 
-    print("Hello World")
+            arguments.append(argument)
+
+        instruction = instruction_class(arguments)
+        instruction.execute()
 
 
 if __name__ == '__main__':
