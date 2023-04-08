@@ -941,6 +941,38 @@ ARGUMENT_TYPE_MAP = {
 }
 
 
+def checkXML(root: ElementTree):
+    """
+    Checks if XML is valid
+    :param root:
+    :return:
+    """
+    children = root.findall("./*")
+
+    try:
+        order_counter = int(children[0].get("order"))
+    except:
+        sys.stderr.write("Missing order attribute")
+        sys.exit(WRONG_XML_STRUCTURE_ERROR_CODE)
+
+    for child in children:
+        if child.tag != "instruction":
+            sys.stderr.write("Unknown tag ({})".format(child.tag))
+            sys.exit(WRONG_XML_STRUCTURE_ERROR_CODE)
+
+        try:
+            order = int(child.get("order"))
+        except:
+            sys.stderr.write("Wrong order")
+            sys.exit(WRONG_XML_STRUCTURE_ERROR_CODE)
+
+        if order < 0 or order > len(children) or order < order_counter:
+            sys.stderr.write("Wrong order")
+            sys.exit(WRONG_XML_STRUCTURE_ERROR_CODE)
+
+        order_counter = order
+
+
 def processXML(root: ElementTree):
     """
     Processes XML file and executes instructions
@@ -1042,11 +1074,14 @@ def main():
         sys.stderr.write("Invalid XML")
         sys.exit(INVALID_XML_ERROR_CODE)
 
+    checkXML(root)
     processXML(root)
     # Memory().reset()
     # 480 / 588
     # 499 / 588
     # 508 / 588
+    # 520 / 588
+    # 525 / 588
 
 
 if __name__ == '__main__':
