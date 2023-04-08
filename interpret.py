@@ -1076,12 +1076,6 @@ def main():
 
     checkXML(root)
     processXML(root)
-    # Memory().reset()
-    # 480 / 588
-    # 499 / 588
-    # 508 / 588
-    # 520 / 588
-    # 525 / 588
 
 
 if __name__ == '__main__':
