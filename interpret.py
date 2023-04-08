@@ -1,6 +1,7 @@
 from __future__ import annotations
 import sys
 import re
+import argparse
 from typing import List, Dict
 from xml.etree import ElementTree
 from abc import abstractmethod, ABC
@@ -898,21 +899,61 @@ def processXML(root: ElementTree):
         pc = Memory().get_program_counter()
 
 
+SOURCE_FILE = False
+INPUT_FILE = False
+
+
+def process_args():
+    parser = argparse.ArgumentParser(
+        prog='IPPCode Interpreter'
+    )
+
+    parser.add_argument('-s', '--source', help='Source file', required=False)
+    parser.add_argument('-i', '--input', help='Input file', required=False)
+
+    args = parser.parse_args()
+
+    global SOURCE_FILE
+    global INPUT_FILE
+
+    SOURCE_FILE = args.source
+    INPUT_FILE = args.input
+
+
 def main():
-    files = ["examples/strings.xml", "examples/arithmetics.xml", "examples/booleans.xml"]
+    process_args()
 
-    Memory().reset()
+    source_str = ""
 
-    for file in files:
-        print("Processing file: {}".format(file))
-        print("------------------")
-        try:
-            root = ElementTree.parse(file)
-            processXML(root)
-        finally:
-            Memory().reset()
-        print("\n------------------")
-        print("Done processing file: {}\n".format(file))
+    try:
+        if SOURCE_FILE is not None:
+            with open(SOURCE_FILE, "r") as source_file:
+                source_str = source_file.read()
+        else:
+            for line in sys.stdin:
+                source_str += line
+    except FileNotFoundError:
+        print("Source file not found")
+        sys.exit(1)
+
+    try:
+        if INPUT_FILE:
+            sys.stdin = open(INPUT_FILE, "r")
+    except FileNotFoundError:
+        print("Input file not found")
+        sys.exit(1)
+
+    try:
+        root = ElementTree.fromstring(source_str)
+    except ElementTree.ParseError:
+        sys.stderr.write("Invalid XML")
+        sys.exit(INVALID_XML_ERROR_CODE)
+
+    processXML(root)
+    # Memory().reset()
+    # 480 / 588
+    # 499 / 588
+    # 508 / 588
 
 
 if __name__ == '__main__':
