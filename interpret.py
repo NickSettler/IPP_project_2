@@ -6,6 +6,7 @@ from typing import List, Dict
 from xml.etree import ElementTree
 from abc import abstractmethod, ABC
 
+# Interpreter error codes
 INVALID_XML_ERROR_CODE = 31
 WRONG_XML_STRUCTURE_ERROR_CODE = 32
 SEMANTIC_ERROR_CODE = 52
@@ -16,6 +17,7 @@ MISSING_VALUE_ERROR_CODE = 56
 WRONG_OPERAND_VALUE_ERROR_CODE = 57
 STRING_OPERATION_ERROR_CODE = 58
 
+# Value check flags
 VALUE_TYPE_INT_CHECK = 0x1
 VALUE_TYPE_BOOL_CHECK = 0x2
 VALUE_TYPE_STRING_CHECK = 0x4
@@ -23,34 +25,44 @@ VALUE_TYPE_NIL_CHECK = 0x8
 VALUE_TYPE_NOT_NIL_CHECK = 0x10
 VALUE_TYPE_SAME_CHECK = 0x20
 
+# Variable check flags
 VARIABLE_DEFINED_CHECK = 0x1
 VARIABLE_NULL_CHECK = 0x2
 VARIABLE_CORRECT_FRAME_CHECK = 0x4
 
 
-def replace_special_chars(input_str):
-    """
-    Replace special characters in format \\ddd with their ASCII representation
-    :param input_str: Input string
-    :return: String with replaced characters
-    """
-    pattern = r"\\(\d{3})"
-
-    def replace(match):
-        return chr(int(match.group(1)))
-
-    return re.sub(pattern, replace, input_str)
-
-
 class Helpers:
+    """
+    Helper class for static methods
+    """
+
+    @staticmethod
+    def replace_special_chars(input_str):
+        """
+        Replace special characters in format \\ddd with their ASCII representation
+        :param input_str: Input string
+        :return: String with replaced characters
+        """
+        pattern = r"\\(\d{3})"
+
+        def replace(match):
+            return chr(int(match.group(1)))
+
+        return re.sub(pattern, replace, input_str)
+
     @staticmethod
     def process_output(arg) -> str:
+        """
+        Process output for WRITE instruction
+        :param arg: Argument to process
+        :return: Processed argument
+        """
         if type(arg) is bool:
             return "true" if arg else "false"
         elif type(arg) is None:
             return ""
         elif type(arg) is str:
-            return replace_special_chars(arg)
+            return Helpers.replace_special_chars(arg)
         else:
             return str(arg)
 
@@ -59,6 +71,14 @@ class Helpers:
                             check1=VARIABLE_CORRECT_FRAME_CHECK,
                             check2=VARIABLE_NULL_CHECK | VARIABLE_CORRECT_FRAME_CHECK,
                             check3=VARIABLE_NULL_CHECK | VARIABLE_CORRECT_FRAME_CHECK) -> bool:
+        """
+        Check if variable arguments are valid
+        :param args: List of arguments
+        :param check1: Check for first argument
+        :param check2: Check for second argument
+        :param check3: Check for third argument
+        :return: True if arguments are valid
+        """
         if type(args[0]) is VariableArgument:
             variable_check(args[0], check1)
 
@@ -72,6 +92,11 @@ class Helpers:
 
     @staticmethod
     def math_args_check(args: List[Argument]) -> bool:
+        """
+        Check if arguments for math instructions are valid
+        :param args: List of arguments
+        :return: True if arguments are valid
+        """
         Helpers.variable_args_check(args)
 
         value1 = args[1].get_value()
@@ -84,7 +109,12 @@ class Helpers:
         return True
 
     @staticmethod
-    def relational_args_check(args: List[Argument], is_eq=False) -> bool:
+    def relational_args_check(args: List[Argument]) -> bool:
+        """
+        Check if arguments for relational instructions are valid
+        :param args: List of arguments
+        :return: True if arguments are valid
+        """
         Helpers.variable_args_check(args)
 
         value1 = args[1].get_value()
@@ -98,6 +128,12 @@ class Helpers:
 
     @staticmethod
     def logical_args_check(args: List[Argument], is_not=False) -> bool:
+        """
+        Check if arguments for logical instructions are valid
+        :param args: List of arguments
+        :param is_not: True if instruction is NOT
+        :return: True if arguments are valid
+        """
         Helpers.variable_args_check(args)
 
         value1 = args[1].get_value()
@@ -112,6 +148,14 @@ class Helpers:
         return True
 
 
+# Arguments section
+# -----------------
+# Arguments are used to pass data to instructions
+# Each argument has a type and a value
+# Variable argument has a frame and a name
+# Label argument has an order
+# Argument is an abstract class and its subclasses are used to represent different types of arguments
+
 class Argument(ABC):
     value: str
     name: str
@@ -121,6 +165,9 @@ class Argument(ABC):
         self.value = value
         self.frame = frame
         self.name = name
+
+    def get_type(self):
+        return self.__class__.__name__
 
     def get_name(self) -> str:
         return self.name
@@ -159,7 +206,7 @@ class NilArgument(Argument):
 class LabelArgument(Argument):
     def __init__(self, value: str):
         super().__init__(value)
-        self._order = None
+        self.order = None
 
     def get_value(self) -> str:
         return self.value
@@ -193,6 +240,12 @@ class VariableArgument(Argument):
 
 
 def value_check(value: any, check: int) -> bool:
+    """
+    Check if value is valid according to check flags
+    :param value: Value to check
+    :param check: Check flags
+    :return: True if value is valid
+    """
     if check & VALUE_TYPE_INT_CHECK:
         if type(value) is not int:
             sys.stderr.write("Error: Invalid operand type\n")
@@ -219,6 +272,13 @@ def value_check(value: any, check: int) -> bool:
 
 
 def values_check(value1, value2, check: int) -> bool:
+    """
+    Makes checks on two values
+    :param value1: first value to check
+    :param value2: second value to check
+    :param check: check flags
+    :return: True if values are valid according to check flags else False
+    """
     if check & VALUE_TYPE_SAME_CHECK:
         if type(value1) is not type(value2):
             sys.stderr.write("Error: Invalid operand type\n")
@@ -228,6 +288,12 @@ def values_check(value1, value2, check: int) -> bool:
 
 
 def variable_check(variable: VariableArgument, check: int) -> bool:
+    """
+    Makes checks on variable
+    :param variable: variable to check
+    :param check: check flags
+    :return: True if variable is valid according to check flags else False
+    """
     if check & VARIABLE_DEFINED_CHECK:
         memory = Memory().get_frame(variable.frame)
 
@@ -247,6 +313,14 @@ def variable_check(variable: VariableArgument, check: int) -> bool:
 
     return True
 
+
+# Instructions section
+# --------------------
+# Each instruction is a class that inherits from Instruction class
+# and implements execute method (Command pattern)
+# Each instruction has a list of arguments that are passed to it
+# during initialization
+# Instructions are mapped to their names in INSTRUCTIONS_MAP dictionary
 
 class Instruction(ABC):
     arguments: List[Argument]
@@ -426,7 +500,7 @@ class GTInstruction(Instruction):
 
 class EQInstruction(Instruction):
     def execute(self):
-        Helpers.relational_args_check(self.arguments, True)
+        Helpers.relational_args_check(self.arguments)
 
         variable = self.arguments[0]
         value1 = self.arguments[1].get_value()
@@ -688,6 +762,12 @@ class BreakInstruction(Instruction):
         pass
 
 
+# Memory section
+# --------------
+# Memory is singleton. It is implemented by metaclass MemoryMeta
+# which ensures that only one instance of Memory is created
+# Memory is used for storing variables, frames, labels and program counter
+
 class MemoryMeta(type):
     _instances = {}
 
@@ -810,6 +890,7 @@ class Memory(metaclass=MemoryMeta):
         self._program_counter = 0
 
 
+# Dictionary to map instruction name to instruction class
 INSTRUCTION_MAP = {
     "MOVE": MoveInstruction,
     "CREATEFRAME": CreateFrameInstruction,
@@ -848,6 +929,7 @@ INSTRUCTION_MAP = {
     "BREAK": BreakInstruction,
 }
 
+# Dictionary to map argument type to argument class
 ARGUMENT_TYPE_MAP = {
     "int": IntegerArgument,
     "bool": BooleanArgument,
@@ -860,6 +942,11 @@ ARGUMENT_TYPE_MAP = {
 
 
 def processXML(root: ElementTree):
+    """
+    Processes XML file and executes instructions
+    :param root: root of XML file
+    :return: None
+    """
     children = root.findall("./*")
 
     pc = Memory().get_program_counter()
@@ -904,8 +991,14 @@ INPUT_FILE = False
 
 
 def process_args():
+    """
+    Processes interpreter arguments
+    :return: None
+    """
     parser = argparse.ArgumentParser(
-        prog='IPPCode Interpreter'
+        prog='interpret.py',
+        description='IPPCode23 interpreter',
+        epilog='Author: Nikita Moiseev (xmoise01)',
     )
 
     parser.add_argument('-s', '--source', help='Source file', required=False)
