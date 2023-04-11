@@ -360,17 +360,17 @@ class PushFrameInstruction(Instruction):
             sys.stderr.write("Error: Non-existing frame\n")
             sys.exit(NON_EXISTING_FRAME_ERROR_CODE)
 
-        Memory().set_local_frame(Memory().get_temporary_frame())
-        Memory().set_temporary_frame({})
+        Memory().push_frame_stack(Memory().get_temporary_frame())
+        Memory().set_temporary_frame(None)
 
 
 class PopFrameInstruction(Instruction):
     def execute(self):
-        if Memory().get_local_frame() is None:
-            sys.stderr.write("Error: Non-existing frame\n")
+        if Memory().get_frame_stack_size() == 0:
+            sys.stderr.write("Error: Empty frame stack\n")
             sys.exit(NON_EXISTING_FRAME_ERROR_CODE)
 
-        Memory().set_temporary_frame(Memory().get_local_frame())
+        Memory().set_temporary_frame(Memory().pop_frame_stack())
 
 
 class DefVarInstruction(Instruction):
@@ -390,18 +390,19 @@ class CallInstruction(Instruction):
             sys.stderr.write("Error: Non-existing label\n")
             sys.exit(SEMANTIC_ERROR_CODE)
 
+        Memory().push_call_stack(Memory().get_program_counter())
         Memory().set_program_counter(order)
 
 
 class ReturnInstruction(Instruction):
     def execute(self):
-        stack = Memory().get_stack()
-
-        if len(stack) == 0:
-            sys.stderr.write("Error: Empty stack\n")
+        if Memory().get_call_stack_size() == 0:
+            sys.stderr.write("Error: Empty call stack\n")
             sys.exit(MISSING_VALUE_ERROR_CODE)
 
-        Memory().set_program_counter(stack.pop())
+        prev_order = Memory().pop_call_stack()
+
+        Memory().set_program_counter(prev_order)
 
 
 class PushSInstruction(Instruction):
@@ -803,10 +804,12 @@ class Memory(metaclass=MemoryMeta):
             raise Exception("Unknown frame name ({})".format(frame_name))
 
     def __init__(self):
+        self._stack = []
+        self._call_stack = []
+        self._frame_stack = []
         self._global_frame = {}
         self._local_frame = None
         self._temporary_frame = None
-        self._stack = []
         self._program_counter = 0
         self._labels = {}
 
@@ -895,6 +898,34 @@ class Memory(metaclass=MemoryMeta):
         self._temporary_frame = {}
         self._stack = []
         self._program_counter = 0
+        self._labels = {}
+        self._call_stack = []
+
+    def push_call_stack(self, value):
+        self._call_stack.append(value)
+
+    def pop_call_stack(self):
+        return self._call_stack.pop()
+
+    def push_frame_stack(self, value):
+        self._frame_stack.append(value)
+        self._local_frame = self._frame_stack[-1]
+
+    def get_call_stack_size(self):
+        return len(self._call_stack)
+
+    def pop_frame_stack(self):
+        value = self._frame_stack.pop()
+
+        if len(self._frame_stack) == 0:
+            self._local_frame = None
+        else:
+            self._local_frame = self._frame_stack[-1]
+
+        return value
+
+    def get_frame_stack_size(self):
+        return len(self._frame_stack)
 
 
 # Dictionary to map instruction name to instruction class
