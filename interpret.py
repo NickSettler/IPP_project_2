@@ -1011,12 +1011,54 @@ def checkXML(root: ElementTree):
         order_counter = order
 
 
+def preprocessLabels(root: ElementTree):
+    """
+    Get all labels and store them in memory
+    :param root: root of XML file
+    :return: None
+    """
+
+    children = root.findall("./*")
+
+    for child in children:
+        try:
+            opcode = child.get("opcode")
+
+            if opcode != "LABEL":
+                continue
+
+            args = child.findall("./*")
+
+            if len(args) != 1:
+                raise Exception("Wrong number of arguments")
+
+            arg = args[0]
+
+            if arg.tag != "arg1":
+                raise Exception("Wrong argument tag")
+
+            if arg.get("type") != "label":
+                raise Exception("Wrong argument type")
+
+            label_name = arg.text
+
+            if label_name is None:
+                raise Exception("Missing label name")
+
+            Memory().create_label(label_name, int(child.get("order")))
+        except Exception as e:
+            sys.stderr.write(str(e))
+            sys.exit(WRONG_XML_STRUCTURE_ERROR_CODE)
+
+
 def processXML(root: ElementTree):
     """
     Processes XML file and executes instructions
     :param root: root of XML file
     :return: None
     """
+    preprocessLabels(root)
+
     children = root.findall("./*")
 
     pc = Memory().get_program_counter()
@@ -1030,6 +1072,10 @@ def processXML(root: ElementTree):
             raise Exception("Unknown tag ({})".format(instruction_tag.tag))
 
         opcode = instruction_tag.get("opcode")
+
+        if opcode == "LABEL":
+            pc = Memory().get_program_counter()
+            continue
 
         if opcode not in INSTRUCTION_MAP.keys():
             raise Exception("Unknown opcode ({})".format(opcode))
