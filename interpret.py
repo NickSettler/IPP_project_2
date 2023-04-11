@@ -813,6 +813,7 @@ class Memory(metaclass=MemoryMeta):
         self._program_counter = 0
         self._labels = {}
 
+    # Program counter methods
     def increment_program_counter(self):
         self._program_counter += 1
 
@@ -825,6 +826,7 @@ class Memory(metaclass=MemoryMeta):
     def get_program_counter(self):
         return self._program_counter
 
+    # Memory frames methods
     def get_global_frame(self) -> Dict:
         return self._global_frame
 
@@ -840,12 +842,14 @@ class Memory(metaclass=MemoryMeta):
     def get_temporary_frame(self) -> Dict:
         return self._temporary_frame
 
-    def get_stack(self) -> List:
-        return self._stack
-
     def get_frame(self, frame_name: str) -> Dict:
         return self.get_frame_method(self, frame_name)()
 
+    # Stack methods
+    def get_stack(self) -> List:
+        return self._stack
+
+    # Variable methods
     def get_variable(self, frame_name: str, variable_name: str) -> VariableArgument | None:
         frame = self.get_frame(frame_name)
 
@@ -878,6 +882,7 @@ class Memory(metaclass=MemoryMeta):
 
         frame[variable_name] = value
 
+    # Label methods
     def create_label(self, label_name: str, label_order: int) -> None:
         if label_name in self._labels:
             sys.stderr.write("Label already defined")
@@ -892,27 +897,20 @@ class Memory(metaclass=MemoryMeta):
 
         return self._labels[label_name]
 
-    def reset(self):
-        self._global_frame = {}
-        self._local_frame = {}
-        self._temporary_frame = {}
-        self._stack = []
-        self._program_counter = 0
-        self._labels = {}
-        self._call_stack = []
-
+    # Call stack methods
     def push_call_stack(self, value):
         self._call_stack.append(value)
 
     def pop_call_stack(self):
         return self._call_stack.pop()
 
+    def get_call_stack_size(self):
+        return len(self._call_stack)
+
+    # Frame stack methods
     def push_frame_stack(self, value):
         self._frame_stack.append(value)
         self._local_frame = self._frame_stack[-1]
-
-    def get_call_stack_size(self):
-        return len(self._call_stack)
 
     def pop_frame_stack(self):
         value = self._frame_stack.pop()
