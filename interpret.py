@@ -567,6 +567,13 @@ class Stri2IntInstruction(Instruction):
         string = self.arguments[1].get_value()
         index = self.arguments[2].get_value()
 
+        value_check(string, VALUE_TYPE_STRING_CHECK)
+        value_check(index, VALUE_TYPE_INT_CHECK)
+
+        if index >= len(string) or index < 0:
+            sys.stderr.write("Error: Index out of range\n")
+            sys.exit(STRING_OPERATION_ERROR_CODE)
+
         Memory().update_variable(variable.get_frame(), variable.get_name(), ord(string[index]))
 
 
