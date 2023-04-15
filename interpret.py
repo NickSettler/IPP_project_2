@@ -863,9 +863,6 @@ class Memory(metaclass=MemoryMeta):
     def increment_program_counter(self):
         self._program_counter += 1
 
-    def decrement_program_counter(self):
-        self._program_counter -= 1
-
     def set_program_counter(self, value):
         self._program_counter = value
 
@@ -909,15 +906,6 @@ class Memory(metaclass=MemoryMeta):
             sys.exit(SEMANTIC_ERROR_CODE)
 
         frame[variable_name] = None
-
-    def read_variable(self, frame_name: str, variable_name: str) -> VariableArgument:
-        frame = self.get_frame(frame_name)
-
-        if variable_name not in frame:
-            sys.stderr.write("Variable not defined")
-            sys.exit(UNDEFINED_VARIABLE_ERROR_CODE)
-
-        return frame[variable_name]
 
     def update_variable(self, frame_name: str, variable_name: str, value) -> None:
         frame = self.get_frame(frame_name)
