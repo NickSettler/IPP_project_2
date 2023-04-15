@@ -29,6 +29,7 @@ VALUE_TYPE_SAME_CHECK = 0x20
 VARIABLE_DEFINED_CHECK = 0x1
 VARIABLE_NULL_CHECK = 0x2
 VARIABLE_CORRECT_FRAME_CHECK = 0x4
+VARIABLE_IS_UNDEFINED_CHECK = 0x8
 
 
 class Helpers:
@@ -63,14 +64,18 @@ class Helpers:
             return ""
         elif type(arg) is str:
             return Helpers.replace_special_chars(arg)
+        elif type(arg) == UndefinedArgument:
+            return ""
+        elif arg is None:
+            return ""
         else:
             return str(arg)
 
     @staticmethod
     def variable_args_check(args: List[Argument],
                             check1=VARIABLE_CORRECT_FRAME_CHECK,
-                            check2=VARIABLE_NULL_CHECK | VARIABLE_CORRECT_FRAME_CHECK,
-                            check3=VARIABLE_NULL_CHECK | VARIABLE_CORRECT_FRAME_CHECK) -> bool:
+                            check2=VARIABLE_NULL_CHECK | VARIABLE_CORRECT_FRAME_CHECK | VARIABLE_IS_UNDEFINED_CHECK,
+                            check3=VARIABLE_NULL_CHECK | VARIABLE_CORRECT_FRAME_CHECK | VARIABLE_IS_UNDEFINED_CHECK) -> bool:
         """
         Check if variable arguments are valid
         :param args: List of arguments
@@ -203,6 +208,11 @@ class NilArgument(Argument):
         return None
 
 
+class UndefinedArgument(Argument):
+    def get_value(self) -> None:
+        return None
+
+
 class LabelArgument(Argument):
     def __init__(self, value: str):
         super().__init__(value)
@@ -311,6 +321,11 @@ def variable_check(variable: VariableArgument, check: int) -> bool:
             sys.stderr.write("Error: Invalid frame\n")
             sys.exit(NON_EXISTING_FRAME_ERROR_CODE)
 
+    if check & VARIABLE_IS_UNDEFINED_CHECK:
+        if type(Memory().get_variable(variable.get_frame(), variable.get_name())) == UndefinedArgument:
+            sys.stderr.write("Error: Variable not defined\n")
+            sys.exit(MISSING_VALUE_ERROR_CODE)
+
     return True
 
 
@@ -379,6 +394,7 @@ class DefVarInstruction(Instruction):
 
         variable = self.arguments[0]
         Memory().create_variable(variable.get_frame(), variable.get_name())
+        Memory().update_variable(variable.get_frame(), variable.get_name(), UndefinedArgument(None))
 
 
 class CallInstruction(Instruction):
@@ -850,7 +866,7 @@ class Memory(metaclass=MemoryMeta):
         return self._stack
 
     # Variable methods
-    def get_variable(self, frame_name: str, variable_name: str) -> VariableArgument | None:
+    def get_variable(self, frame_name: str, variable_name: str) -> VariableArgument | UndefinedArgument:
         frame = self.get_frame(frame_name)
 
         return frame[variable_name]
