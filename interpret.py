@@ -719,7 +719,7 @@ class SetCharInstruction(Instruction):
 
 class TypeInstruction(Instruction):
     def execute(self):
-        Helpers.variable_args_check(self.arguments)
+        Helpers.variable_args_check(self.arguments, VARIABLE_CORRECT_FRAME_CHECK, VARIABLE_CORRECT_FRAME_CHECK)
 
         variable = self.arguments[0]
         value = self.arguments[1].get_value()
@@ -733,6 +733,8 @@ class TypeInstruction(Instruction):
             type_str = "string"
         elif type_str == "NoneType":
             type_str = "nil"
+        elif type_str == "UndefinedArgument":
+            type_str = ""
 
         Memory().update_variable(variable.get_frame(), variable.get_name(), type_str)
 
