@@ -625,6 +625,10 @@ class ReadInstruction(Instruction):
 class WriteInstruction(Instruction):
     def execute(self):
         for argument in self.arguments:
+            if type(argument) == VariableArgument:
+                variable_check(argument, VARIABLE_CORRECT_FRAME_CHECK)
+                variable_check(argument, VARIABLE_DEFINED_CHECK | VARIABLE_IS_UNDEFINED_CHECK)
+
             print(Helpers.process_output(argument.get_value()), end="")
 
 
