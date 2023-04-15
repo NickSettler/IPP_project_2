@@ -687,13 +687,21 @@ class SetCharInstruction(Instruction):
         index = self.arguments[1].get_value()
         replace_string = self.arguments[2].get_value()
 
+        if type(variable) != VariableArgument:
+            sys.stderr.write("Argument is not a variable")
+            sys.exit(WRONG_OPERAND_TYPE_ERROR_CODE)
+
         if variable.get_value() == '':
             sys.stderr.write("Empty value")
             sys.exit(WRONG_OPERAND_TYPE_ERROR_CODE)
 
-        if type(variable.get_value()) != str or type(index) != int or type(replace_string) != str:
-            sys.stderr.write("Wrong type of operand")
-            sys.exit(WRONG_OPERAND_TYPE_ERROR_CODE)
+        variable_check(variable, VARIABLE_IS_UNDEFINED_CHECK)
+
+        value_check(variable.get_value(), VALUE_TYPE_STRING_CHECK)
+        value_check(index, VALUE_TYPE_INT_CHECK)
+        value_check(replace_string, VALUE_TYPE_STRING_CHECK)
+
+        replace_string = Helpers.replace_special_chars(replace_string)
 
         if index < 0 or index >= len(variable.get_value()):
             sys.stderr.write("IndexError: string index out of range")
