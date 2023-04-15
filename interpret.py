@@ -600,14 +600,24 @@ class ReadInstruction(Instruction):
 
         variable = self.arguments[0]
         var_type = self.arguments[1].get_value()
-        value = input()
+        try:
+            value = input()
+        except EOFError:
+            sys.stderr.write("Error: EOFError\n")
+            sys.exit(UNDEFINED_VARIABLE_ERROR_CODE)
 
         if var_type == "int":
-            value = int(value)
+            try:
+                value = int(value)
+            except:
+                value = None
         elif var_type == "bool":
             value = value.lower() == "true"
         elif var_type == "string":
-            value = str(value)
+            try:
+                value = str(value)
+            except:
+                value = None
 
         Memory().update_variable(variable.get_frame(), variable.get_name(), value)
 
