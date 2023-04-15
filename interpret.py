@@ -784,7 +784,13 @@ class JumpIfNeqInstruction(Instruction):
 
 class ExitInstruction(Instruction):
     def execute(self):
-        Helpers.variable_args_check(self.arguments, VARIABLE_CORRECT_FRAME_CHECK | VARIABLE_NULL_CHECK)
+        Helpers.variable_args_check(self.arguments,  VARIABLE_CORRECT_FRAME_CHECK)
+
+        arg = self.arguments[0]
+
+        if type(arg) is VariableArgument:
+            variable_check(arg, VARIABLE_DEFINED_CHECK)
+            variable_check(arg, VARIABLE_IS_UNDEFINED_CHECK)
 
         code = self.arguments[0].get_value()
 
